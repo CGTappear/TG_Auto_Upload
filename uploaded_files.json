@@ -1,0 +1,28 @@
+{
+  "a6a0e9d999a85f2cd3f1a06dd48091629b7392488d6b3e0905010110d2f3e857": {
+    "path": "D:\\Pictures\\微信图片_20260630192410_54_3.png",
+    "relative_path": "微信图片_20260630192410_54_3.png",
+    "size": 41592,
+    "upload_time": "2026-06-30 19:24:25",
+    "message_id": 727
+  },
+  "61b4d06adb6fab002afd8d8e435308bdee60a1e9efbcabadd326d527a2cad022": {
+    "path": "D:\\Pictures\\微信图片_20260630192823_55_3.png",
+    "relative_path": "微信图片_20260630192823_55_3.png",
+    "size": 71302,
+    "type": "图片预览",
+    "upload_time": "2026-06-30 19:28:35",
+    "message_id": 728
+  },
+  "videos:b3bdfb9eb3cc598e31afe6c8a9a42be9b368ff9ba992264b83629b5273f71121": {
+    "channel_name": "videos",
+    "chat_id": "-1003807689008",
+    "path": "D:\\videos\\Instagram_3.mp4",
+    "relative_path": "Instagram_3.mp4",
+    "size": 7502290,
+    "sha256": "b3bdfb9eb3cc598e31afe6c8a9a42be9b368ff9ba992264b83629b5273f71121",
+    "upload_type": "视频预览",
+    "upload_time": "2026-06-30 19:46:00",
+    "message_id": 44
+  }
+}
