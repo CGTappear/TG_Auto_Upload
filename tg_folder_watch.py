@@ -3,7 +3,7 @@ import json
 import time
 import hashlib
 from pathlib import Path
-
+from dotenv import load_dotenv
 import requests
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -13,7 +13,9 @@ from watchdog.events import FileSystemEventHandler
 # 1. 基础配置
 # =========================
 
-BOT_TOKEN = "8930018056:AAGgS9KmhRO72TQB_6WgPYSFmOeMKFSDt-Y"
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # 多目录 → 多频道映射
 # name: 只是本地标识，方便日志显示
