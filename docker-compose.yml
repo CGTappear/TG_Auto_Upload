@@ -33,9 +33,9 @@ services:
       VIDEOS_DIR: /data/videos
       MUSIC_DIR: /data/music
 
-      PICTURES_HOST_DIR: D:\Pictures
-      VIDEOS_HOST_DIR: D:\videos
-      MUSIC_HOST_DIR: D:\Music
+      PICTURES_HOST_DIR: "D:/Pictures"
+      VIDEOS_HOST_DIR: "D:/videos"
+      MUSIC_HOST_DIR: "D:/Music"
 
       DB_FILE: /app/state/uploaded_files.json
 

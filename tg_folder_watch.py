@@ -29,18 +29,21 @@ WATCH_CONFIGS = [
     {
         "name": "pictures",
         "path": os.getenv("PICTURES_DIR", "/data/pictures"),
+        "host_path": os.getenv("PICTURES_HOST_DIR", r"D:\Pictures"),
         "chat_id": os.getenv("PICTURES_CHAT_ID", "-1003502902643"),
         "scan_existing": os.getenv("PICTURES_SCAN_EXISTING", "false").lower() == "true",
     },
     {
         "name": "videos",
         "path": os.getenv("VIDEOS_DIR", "/data/videos"),
+        "host_path": os.getenv("VIDEOS_HOST_DIR", r"D:\videos"),
         "chat_id": os.getenv("VIDEOS_CHAT_ID", "-1003807689008"),
         "scan_existing": os.getenv("VIDEOS_SCAN_EXISTING", "false").lower() == "true",
     },
     {
         "name": "music",
         "path": os.getenv("MUSIC_DIR", "/data/music"),
+        "host_path": os.getenv("MUSIC_HOST_DIR", r"D:\Music"),
         "chat_id": os.getenv("MUSIC_CHAT_ID", "-1003956905596"),
         "scan_existing": os.getenv("MUSIC_SCAN_EXISTING", "false").lower() == "true",
     },
