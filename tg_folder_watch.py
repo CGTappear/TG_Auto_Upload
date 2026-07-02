@@ -408,13 +408,25 @@ def main():
     print("=" * 60)
     print("开始监听。按 Ctrl + C 停止。")
 
-    try:
-        while True:
-            time.sleep(5)
-    except KeyboardInterrupt:
-        print("正在停止监听...")
-        observer.stop()
+try:
+    while True:
+        time.sleep(60)
 
+        print("[定时扫描] 开始扫描监听目录...")
+
+        for config in WATCH_CONFIGS:
+            root_dir = config["path"]
+
+            if os.path.exists(root_dir):
+                upload_existing_files(config)
+            else:
+                print(f"[{config['name']}] 定时扫描跳过，目录不存在：{root_dir}")
+
+        print("[定时扫描] 扫描完成")
+
+except KeyboardInterrupt:
+    print("正在停止监听...")
+    observer.stop()
     observer.join()
 
 
