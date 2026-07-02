@@ -388,7 +388,9 @@ def main():
             print(f"[{config['name']}] 目录不存在，跳过监听：{path}")
             continue
 
-        print(f"[{config['name']}] 监听目录：{path}")
+        print(f"[{config['name']}] 宿主机目录：{config.get('host_path')}")
+        print(f"[{config['name']}] 容器监听目录：{path}")
+        print(f"[{config['name']}] 目标频道：{config['chat_id']}")
         print(f"[{config['name']}] 目标频道：{config['chat_id']}")
 
         if config.get("scan_existing", False):
