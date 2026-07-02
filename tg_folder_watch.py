@@ -17,34 +17,38 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+# 默认走 Telegram 官方 API
+# Docker Compose 里可以改成：http://telegram-bot-api:8081
+TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "https://api.telegram.org").rstrip("/")
+
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN 未配置，请在 .env 或 docker-compose.yml 中设置 BOT_TOKEN")
+
 # 多目录 → 多频道映射
-# name: 只是本地标识，方便日志显示
-# path: 需要监听的本地目录
-# chat_id: 对应 Telegram 私有频道 ID
-# scan_existing: 启动时是否扫描并上传已有文件
 WATCH_CONFIGS = [
     {
         "name": "pictures",
-        "path": r"D:\Pictures",
-        "chat_id": "-1003502902643",
-        "scan_existing": False,
+        "path": os.getenv("PICTURES_DIR", "/data/pictures"),
+        "chat_id": os.getenv("PICTURES_CHAT_ID", "-1003502902643"),
+        "scan_existing": os.getenv("PICTURES_SCAN_EXISTING", "false").lower() == "true",
     },
     {
         "name": "videos",
-        "path": r"D:\videos",
-        "chat_id": "-1003807689008",
-        "scan_existing": False,
+        "path": os.getenv("VIDEOS_DIR", "/data/videos"),
+        "chat_id": os.getenv("VIDEOS_CHAT_ID", "-1003807689008"),
+        "scan_existing": os.getenv("VIDEOS_SCAN_EXISTING", "false").lower() == "true",
     },
     {
         "name": "music",
-        "path": r"D:\Music",
-        "chat_id": "-1003956905596",
-        "scan_existing": False,
+        "path": os.getenv("MUSIC_DIR", "/data/music"),
+        "chat_id": os.getenv("MUSIC_CHAT_ID", "-1003956905596"),
+        "scan_existing": os.getenv("MUSIC_SCAN_EXISTING", "false").lower() == "true",
     },
 ]
 
-DB_FILE = Path(__file__).with_name("uploaded_files.json")
-
+# 上传记录文件放到持久化目录，避免容器重建后丢失
+DB_FILE = Path(os.getenv("DB_FILE", "/app/state/uploaded_files.json"))
+DB_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 # =========================
 # 2. 文件类型配置
@@ -272,7 +276,7 @@ def upload_file(path):
 
     method = get_upload_method(path)
 
-    api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method['api']}"
+    api_url = f"{TELEGRAM_API_BASE}/bot{BOT_TOKEN}/{method['api']}"
 
     print(f"[{config['name']}] 开始上传：{relative_path}，类型：{method['type']}")
 

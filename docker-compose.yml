@@ -1,0 +1,44 @@
+services:
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram-bot-api
+    restart: unless-stopped
+
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+      TELEGRAM_LOCAL: 1
+
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+
+    volumes:
+      - ./telegram-bot-api-data:/var/lib/telegram-bot-api
+
+  cgtappear-uploader:
+    build: .
+    container_name: cgtappear-uploader
+    restart: unless-stopped
+
+    depends_on:
+      - telegram-bot-api
+
+    env_file:
+      - .env
+
+    environment:
+      TELEGRAM_API_BASE: http://telegram-bot-api:8081
+
+      PICTURES_DIR: /data/pictures
+      VIDEOS_DIR: /data/videos
+      MUSIC_DIR: /data/music
+
+      DB_FILE: /app/state/uploaded_files.json
+
+    volumes:
+      - ./state:/app/state
+
+      - D:/Pictures:/data/pictures
+      - D:/videos:/data/videos
+      - D:/Music:/data/music
