@@ -12,6 +12,10 @@ services:
     ports:
       - "8081:8081"
 
+    # 让容器可以通过 host.docker.internal 访问宿主机（Linux 需要；Windows/Mac Docker Desktop 自带）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     volumes:
       - ./telegram-bot-api-data:/var/lib/telegram-bot-api
 
@@ -26,8 +30,15 @@ services:
     env_file:
       - .env
 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     environment:
-      TELEGRAM_API_BASE: http://telegram-bot-api:8081
+      TELEGRAM_API_BASE: ${TELEGRAM_API_BASE:-http://telegram-bot-api:8081}
+
+      # 宿主机系统代理（在 .env 中设置 PROXY_URL，例如 http://host.docker.internal:7890）
+      PROXY_URL: ${PROXY_URL:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,telegram-bot-api}
 
       PICTURES_DIR: /data/pictures
       VIDEOS_DIR: /data/videos

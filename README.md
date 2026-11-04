@@ -100,8 +100,47 @@ python tg_folder_watch.py
   - chat_id：目标频道/群组 ID（例如 `-1001234567890`）
   - scan_existing：启动时是否扫描已有文件（true/false，默认 false）
 
+- PROXY_URL：容器内使用的代理地址，例如 `http://host.docker.internal:7890` 或 `socks5h://host.docker.internal:7890`（详见下文“在 Docker 中使用宿主机系统代理”）。
+- NO_PROXY：不走代理的主机列表，默认 `localhost,127.0.0.1,telegram-bot-api`。
 - PICTURES_DIR / VIDEOS_DIR / MUSIC_DIR：在 docker-compose 中示例化的环境变量，分别对应 WATCH_CONFIGS 中的 path。
 - DB_FILE：已上传记录的 json 文件路径，容器默认 `/app/state/uploaded_files.json`（该目录在 docker-compose.yml 中映射到宿主机的 `./state`，确保持久化）。
+
+## 在 Docker 中使用宿主机系统代理
+
+容器内的 `127.0.0.1` 指向容器自己，不是宿主机，所以不能直接用 `127.0.0.1:7890`。需要用 `host.docker.internal` 访问宿主机上的代理。
+
+### 1. 宿主机代理软件设置
+
+- Clash / Clash Verge / Mihomo：开启 **Allow LAN（允许局域网连接）**，记下混合端口（常见为 `7890`）。
+- v2rayN：开启 **允许来自局域网的连接**，HTTP 端口一般为 `10809`，SOCKS 端口为 `10808`。
+- Windows 防火墙可能拦截来自 Docker（WSL2 虚拟网卡）的连接，如连不上请放行代理软件。
+
+### 2. 在 `.env` 中配置
+
+```env
+PROXY_URL=http://host.docker.internal:7890
+# 或使用 SOCKS5（socks5h 表示域名由代理端解析，推荐）
+# PROXY_URL=socks5h://host.docker.internal:7890
+NO_PROXY=localhost,127.0.0.1,telegram-bot-api
+```
+
+`docker-compose.yml` 已为两个服务添加 `extra_hosts: host.docker.internal:host-gateway`，Windows / macOS / Linux 下都能解析该地址。
+
+上传脚本启动时会打印当前网络模式并调用 `getMe` 检查连通性，日志中出现 `Telegram API 连通正常` 即表示代理可用。
+
+### 3. 两种运行模式的区别（重要）
+
+| 模式 | `TELEGRAM_API_BASE` | 谁需要访问外网 | 代理方式 |
+| --- | --- | --- | --- |
+| 本地 Bot API 服务（默认，单文件最大 2GB） | `http://telegram-bot-api:8081` | `telegram-bot-api` 容器（MTProto 协议） | 宿主机代理开启 **TUN 模式 / 虚拟网卡模式** |
+| 官方 API（单文件最大 50MB） | `https://api.telegram.org` | 上传容器（HTTPS） | `PROXY_URL` 即可 |
+
+说明：官方 `telegram-bot-api` 服务端程序不支持为 MTProto 连接配置 HTTP/SOCKS 代理（它的 `--proxy` 参数只作用于 webhook 请求）。因此使用本地 Bot API 服务时：
+
+- 上传容器 → `telegram-bot-api` 容器是 Docker 内网通信，**不走代理**（已在 `NO_PROXY` 中排除）；
+- `telegram-bot-api` 容器 → Telegram 服务器需要由宿主机的 **TUN 模式**（Clash Verge 的“虚拟网卡模式”、v2rayN 的 “TUN”）接管流量。Docker Desktop（WSL2）发出的流量会经过 Windows 网络栈，开启 TUN 后即可自动走代理。
+
+如果不想开 TUN 且文件都小于 50MB，可以在 `.env` 中设置 `TELEGRAM_API_BASE=https://api.telegram.org`，只依靠 `PROXY_URL` 即可。
 
 ## 文件类型与忽略规则
 

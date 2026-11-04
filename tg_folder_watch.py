@@ -21,6 +21,23 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 # Docker Compose 里可以改成：http://telegram-bot-api:8081
 TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "https://api.telegram.org").rstrip("/")
 
+# 代理配置（用于在 Docker 容器内访问宿主机上的系统代理，如 Clash / v2rayN）
+# 例：PROXY_URL=http://host.docker.internal:7890 或 socks5h://host.docker.internal:7890
+# 未设置 PROXY_URL 时，回退到标准的 HTTPS_PROXY / HTTP_PROXY / ALL_PROXY 环境变量
+PROXY_URL = (
+    os.getenv("PROXY_URL")
+    or os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
+    or os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
+    or os.getenv("ALL_PROXY") or os.getenv("all_proxy")
+    or ""
+).strip()
+
+# 不走代理的地址（逗号分隔），默认跳过本地 telegram-bot-api 容器
+NO_PROXY = os.getenv(
+    "NO_PROXY",
+    os.getenv("no_proxy", "localhost,127.0.0.1,telegram-bot-api"),
+)
+
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN 未配置，请在 .env 或 docker-compose.yml 中设置 BOT_TOKEN")
 
@@ -79,6 +96,47 @@ IGNORE_NAMES = {
 
 
 uploaded_db = {}
+
+
+def build_session():
+    """
+    创建 requests 会话；若配置了代理且 API 地址不在 NO_PROXY 中，则所有请求走代理。
+    """
+    session = requests.Session()
+    # 由我们显式控制代理，避免环境变量与 PROXY_URL 冲突
+    session.trust_env = False
+
+    if PROXY_URL and not requests.utils.should_bypass_proxies(TELEGRAM_API_BASE, NO_PROXY):
+        session.proxies = {"http": PROXY_URL, "https": PROXY_URL}
+
+    return session
+
+
+http = build_session()
+
+
+def describe_proxy():
+    if http.proxies:
+        return f"使用代理 {http.proxies['https']}"
+    if PROXY_URL:
+        return f"API 地址在 NO_PROXY 中，直连（已配置代理 {PROXY_URL}）"
+    return "未配置代理，直连"
+
+
+def check_connectivity():
+    """
+    启动时调用 getMe 检查与 Telegram API 的连通性，便于排查代理问题。
+    """
+    try:
+        r = http.get(f"{TELEGRAM_API_BASE}/bot{BOT_TOKEN}/getMe", timeout=30)
+        if r.ok:
+            username = r.json().get("result", {}).get("username")
+            print(f"Telegram API 连通正常，Bot：@{username}")
+        else:
+            print(f"[警告] Telegram API 返回错误：{r.status_code} {r.text}")
+    except Exception as e:
+        print(f"[警告] 无法连接 Telegram API（{TELEGRAM_API_BASE}）：{e}")
+        print("[警告] 请检查 PROXY_URL 是否正确、宿主机代理是否开启“允许局域网连接”")
 
 
 # =========================
@@ -285,7 +343,7 @@ def upload_file(path):
 
     try:
         with open(path, "rb") as f:
-            response = requests.post(
+            response = http.post(
                 api_url,
                 data={
                     "chat_id": config["chat_id"],
@@ -382,6 +440,9 @@ def main():
     handler = UploadHandler()
 
     print("启动多目录 Telegram 自动上传脚本")
+    print(f"Telegram API：{TELEGRAM_API_BASE}")
+    print(f"网络：{describe_proxy()}")
+    check_connectivity()
     print("=" * 60)
 
     for config in WATCH_CONFIGS:
@@ -393,7 +454,6 @@ def main():
 
         print(f"[{config['name']}] 宿主机目录：{config.get('host_path')}")
         print(f"[{config['name']}] 容器监听目录：{path}")
-        print(f"[{config['name']}] 目标频道：{config['chat_id']}")
         print(f"[{config['name']}] 目标频道：{config['chat_id']}")
 
         if config.get("scan_existing", False):
@@ -408,26 +468,26 @@ def main():
     print("=" * 60)
     print("开始监听。按 Ctrl + C 停止。")
 
-try:
-    while True:
-        time.sleep(60)
+    try:
+        while True:
+            time.sleep(60)
 
-        print("[定时扫描] 开始扫描监听目录...")
+            print("[定时扫描] 开始扫描监听目录...")
 
-        for config in WATCH_CONFIGS:
-            root_dir = config["path"]
+            for config in WATCH_CONFIGS:
+                root_dir = config["path"]
 
-            if os.path.exists(root_dir):
-                upload_existing_files(config)
-            else:
-                print(f"[{config['name']}] 定时扫描跳过，目录不存在：{root_dir}")
+                if os.path.exists(root_dir):
+                    upload_existing_files(config)
+                else:
+                    print(f"[{config['name']}] 定时扫描跳过，目录不存在：{root_dir}")
 
-        print("[定时扫描] 扫描完成")
+            print("[定时扫描] 扫描完成")
 
-except KeyboardInterrupt:
-    print("正在停止监听...")
-    observer.stop()
-    observer.join()
+    except KeyboardInterrupt:
+        print("正在停止监听...")
+        observer.stop()
+        observer.join()
 
 
 if __name__ == "__main__":
