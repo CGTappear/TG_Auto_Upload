@@ -11,3 +11,5 @@ wheels/
 .env
 uploaded_files.json
 __pycache__/
+file_index.json
+state/
