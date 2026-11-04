@@ -10,5 +10,6 @@ wheels/
 .venv
 .env
 uploaded_files.json
-__pycache__/file_index.json
+__pycache__/
+file_index.json
 state/
